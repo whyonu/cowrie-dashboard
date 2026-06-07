@@ -113,10 +113,10 @@ def run_migrations():
 
         for name, sql in MIGRATIONS:
             if name in applied:
-                print(f"  ⏭  {name} уже применена")
+                print(f"  ⏭  {name} already applied")
                 continue
 
-            print(f"Применяю {name}...")
+            print(f"Applying {name}...")
             conn.executescript(sql)
             conn.execute(
                 "INSERT INTO schema_migrations (name) VALUES (?)",
@@ -124,9 +124,9 @@ def run_migrations():
             )
             print(f"  ✅ {name}")
 
-        print("\n🎉 Все миграции применены!")
+        print("\n🎉 All migrations applied!")
 
 
 if __name__ == "__main__":
-    print("Запуск миграций...\n")
+    print("Running migrations...\n")
     run_migrations()
