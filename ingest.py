@@ -10,7 +10,7 @@ LOG_GLOB = os.getenv('LOG_GLOB', '/opt/honeypot/cowrie-data/cowrie.json*')
 
 
 def get_last_position(log_file):
-    """Узнать с какого байта продолжать чтение"""
+    """Get the byte position where we last stopped reading"""
     row = query_one(
         "SELECT last_position FROM parser_state WHERE log_file = ?",
         (log_file,)
@@ -19,7 +19,7 @@ def get_last_position(log_file):
 
 
 def save_position(log_file, position):
-    """Сохранить новую позицию"""
+    """Save the new byte position"""
     with get_db() as conn:
         conn.execute("""
             INSERT INTO parser_state (log_file, last_position, last_updated)
@@ -32,8 +32,8 @@ def save_position(log_file, position):
 
 def process_event(conn, event):
     """
-    Обрабатывает одно событие из лога.
-    Раскладывает по нужным таблицам в зависимости от типа.
+    Process a single event from the log.
+    Routes data into the appropriate tables based on event type.
     """
     eventid = event.get('eventid')
     timestamp = event.get('timestamp')
@@ -43,20 +43,20 @@ def process_event(conn, event):
     if not src_ip or not timestamp:
         return
 
-    # Базовая таблица событий — пишем всё что есть
+    # Base events table — record every event
     conn.execute("""
         INSERT INTO events (timestamp, src_ip, event_type, session_id)
         VALUES (?, ?, ?, ?)
     """, (timestamp, src_ip, eventid, session))
 
-    # Upsert атакующего (обновляем last_seen, создаём при первом появлении)
+    # Upsert attacker (update last_seen, create on first appearance)
     conn.execute("""
         INSERT INTO attackers (ip, first_seen, last_seen)
         VALUES (?, ?, ?)
         ON CONFLICT(ip) DO UPDATE SET last_seen = excluded.last_seen
     """, (src_ip, timestamp, timestamp))
 
-    # Дальше — специфичные таблицы по типу события
+    # Type-specific tables
     if eventid in ('cowrie.login.success', 'cowrie.login.failed'):
         success = 1 if eventid == 'cowrie.login.success' else 0
         conn.execute("""
@@ -127,7 +127,7 @@ def ingest_file(log_file):
                     errors += 1
                 except Exception as e:
                     errors += 1
-                    print(f"  ⚠️ Ошибка: {e}")
+                    print(f"  ⚠️ Error: {e}")
 
         new_pos = f.tell()
 
@@ -136,24 +136,24 @@ def ingest_file(log_file):
 
 
 def ingest_all():
-    """Парсит все лог-файлы по очереди"""
+    """Parse all log files sequentially"""
     log_files = sorted(glob.glob(LOG_GLOB))
     if not log_files:
-        print("❌ Лог-файлов не найдено!")
+        print("❌ No log files found!")
         return
 
     total = 0
     for log_file in log_files:
         print(f"  📄 {os.path.basename(log_file)}...", end=" ", flush=True)
         count = ingest_file(log_file)
-        print(f"+{count} новых событий")
+        print(f"+{count} new events")
         total += count
 
-    print(f"\n🎉 Всего обработано: {total} событий")
+    print(f"\n🎉 Total processed: {total} events")
 
 
 if __name__ == "__main__":
-    print("🚀 Запуск ingester...\n")
+    print("🚀 Starting ingester...\n")
     start = time.time()
     ingest_all()
-    print(f"⏱ Время: {round(time.time() - start, 2)}с")
+    print(f"⏱ Time: {round(time.time() - start, 2)}s")
