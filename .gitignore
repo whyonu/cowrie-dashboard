@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+bot.py
+formatter.py
+*.db
+*.db-journal
+*.bak
+*_old.py*

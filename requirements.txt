@@ -1,0 +1,5 @@
+aiohttp
+streamlit
+pandas
+python-dotenv
+requests
