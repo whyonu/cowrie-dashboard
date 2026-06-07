@@ -75,10 +75,10 @@ async def fetch_bazaar(session, sha256):
 async def enrich_attackers():
     rows = query("SELECT ip FROM attackers WHERE country IS NULL LIMIT 200")
     if not rows:
-        print("  ✅ Все IP уже обогащены")
+        print("  ✅ All IPs already enriched")
         return 0
 
-    print(f"  🌍 Обогащаю {len(rows)} IP...")
+    print(f"  🌍 Enriching {len(rows)} IPs...")
     semaphore = asyncio.Semaphore(3)
 
     async def worker(session, ip):
@@ -108,10 +108,10 @@ async def enrich_downloads():
         LIMIT 50
     """)
     if not rows:
-        print("  ✅ Все файлы уже обогащены")
+        print("  ✅ All files already enriched")
         return 0
 
-    print(f"  🦠 Обогащаю {len(rows)} файлов...")
+    print(f"  🦠 Enriching {len(rows)} files...")
     async with aiohttp.ClientSession() as session:
         for r in rows:
             sha = r['sha256']
@@ -162,17 +162,17 @@ async def scan_orphan_files():
 async def main():
     print("🚀 Enricher\n")
 
-    print("📁 Поиск файлов-сирот в /downloads/")
+    print("📁 Scanning for orphan files in downloads/")
     orphans = await scan_orphan_files()
-    print(f"  ➕ Добавлено: {orphans}\n")
+    print(f"  ➕ Added: {orphans}\n")
 
-    print("🌍 Обогащение IP")
+    print("🌍 Enriching IPs")
     geo_count = await enrich_attackers()
-    print(f"  ✅ Обновлено: {geo_count}\n")
+    print(f"  ✅ Updated: {geo_count}\n")
 
-    print("🦠 Обогащение файлов (VT + Bazaar)")
+    print("🦠 Enriching files (VT + Bazaar)")
     file_count = await enrich_downloads()
-    print(f"  ✅ Обновлено: {file_count}")
+    print(f"  ✅ Updated: {file_count}")
 
 
 if __name__ == "__main__":
